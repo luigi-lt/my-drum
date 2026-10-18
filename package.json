@@ -1,0 +1,16 @@
+{
+  "name": "my-drum",
+  "version": "1.0.0",
+  "description": "A realistic virtual drum kit for the web: multi-touch, keyboard and MIDI, play-along loops, recording and lessons.",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node scripts/serve.mjs 8080",
+    "test": "node --test \"tests/**/*.test.js\"",
+    "test:e2e": "node scripts/smoke.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
