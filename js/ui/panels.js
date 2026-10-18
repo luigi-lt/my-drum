@@ -6,15 +6,15 @@ import { LOOPS } from '../music/loops.js';
 import { LESSONS } from '../lessons/lessons.js';
 import { PIECES, keyLabel } from '../kit/pieces.js';
 import { formatTime } from '../recorder.js';
+import { SKINS, SHELL_FINISHES, SHELL_COLORS, HARDWARE, HEADS, CYMBAL_FINISHES, GLOWS, STAGES, isCustomized, shade } from '../kit/looks.js';
+import { VIEWS, VIEW_ORDER } from '../three/camera.js';
 
-export const FINISHES = [
-  { id: 'maple', name: 'Natural maple', a: '#d08a47', b: '#7a4720' },
-  { id: 'red', name: 'Red sparkle', a: '#c4222e', b: '#5a0910' },
-  { id: 'black', name: 'Satin black', a: '#3c3c41', b: '#0b0b0d' },
-  { id: 'white', name: 'Arctic white', a: '#f1ede6', b: '#a39b8e' },
-  { id: 'blue', name: 'Blue sparkle', a: '#2f6bd0', b: '#0e2350' },
-  { id: 'green', name: 'Racing green', a: '#3f8f5a', b: '#12331f' },
-];
+// colours for the small previews in the Style panel
+const PREVIEW = {
+  hardware: { chrome: '#d9dde1', black: '#2c2f34', gold: '#d9a944' },
+  heads: { coated: '#efe9dd', clear: '#c9ccc5', black: '#1e1e21', mesh: '#2b2d31' },
+  cymbals: { traditional: '#d4a24c', brilliant: '#f0c76c', dark: '#8b6a3c', black: '#2a2a2e' },
+};
 
 export const icon = (name, cls = '') => `<svg class="ic ${cls}" aria-hidden="true"><use href="#i-${name}"></use></svg>`;
 
@@ -329,15 +329,7 @@ function renderKits(root, app) {
           .join('')}
       </div>
     </section>
-    <section class="section">
-      <h3 class="section-title">Finish</h3>
-      <div class="swatches">
-        ${FINISHES.map(
-          (f) =>
-            `<button class="swatch" data-finish="${f.id}" aria-pressed="${s.finish === f.id}" aria-label="${f.name}" title="${f.name}" style="background: radial-gradient(circle at 35% 30%, ${f.a}, ${f.b})"></button>`,
-        ).join('')}
-      </div>
-    </section>
+    <p class="note">Colours, finishes and the stage are in the Style panel.</p>
     ${
       s.kit === 'custom'
         ? `<section class="section">
@@ -375,12 +367,6 @@ function renderKits(root, app) {
   root.addEventListener('click', (e) => {
     const kit = e.target.closest('[data-kit]');
     if (kit) return app.selectKit(kit.dataset.kit);
-    const fin = e.target.closest('[data-finish]');
-    if (fin) {
-      app.settings.set({ finish: fin.dataset.finish });
-      root.querySelectorAll('[data-finish]').forEach((b) => b.setAttribute('aria-pressed', String(b === fin)));
-      return;
-    }
     const act = e.target.closest('[data-act]');
     if (!act) return;
     const sound = act.closest('[data-sound]')?.dataset.sound;
@@ -390,6 +376,162 @@ function renderKits(root, app) {
     }
     if (act.dataset.act === 'clear') app.clearCustomSample(sound);
   });
+}
+
+// ----------------------------------------------------------------- style
+
+const chip = (act, id, label, on, extra = '') =>
+  `<button class="chip" data-act="${act}" data-id="${id}" aria-pressed="${on}" ${extra}>${label}</button>`;
+
+function skinPreview(sk) {
+  const c = sk.color;
+  return `<span class="skin-preview" style="--c1:${shade(c, 0.18)};--c2:${shade(c, -0.45)};--hw:${PREVIEW.hardware[sk.hardware]};--head:${PREVIEW.heads[sk.heads]};--cym:${PREVIEW.cymbals[sk.cymbals]};--glow:${sk.glow || 'transparent'}" data-finish="${sk.finish}">
+    <span class="sp-cym"></span><span class="sp-drum"><span class="sp-head"></span></span>
+  </span>`;
+}
+
+function renderStyle(root, app) {
+  const s = app.settings.get();
+  const look = app.getLook();
+  const is3d = app.state.view === '3d';
+  const painted = Object.keys(look.pieces).length;
+  const custom = isCustomized(look);
+  root.innerHTML = `
+    <section class="section">
+      <h3 class="section-title">View</h3>
+      <div class="segmented" role="group" aria-label="View">
+        <button data-act="view" data-id="3d" aria-pressed="${is3d}" ${app.state.webgl ? '' : 'disabled'}>3D</button>
+        <button data-act="view" data-id="2d" aria-pressed="${!is3d}">Classic 2D</button>
+      </div>
+      ${app.state.webgl ? '' : '<p class="note">This browser cannot draw 3D graphics, so the kit is shown in 2D.</p>'}
+      ${
+        is3d
+          ? `<div class="field"><div class="field-head"><label>Camera</label></div>
+        <div class="chips">${VIEW_ORDER.map((v) => chip('camera', v, VIEWS[v].name, s.camera === v)).join('')}${
+          s.cameraCustom ? chip('camera', 'custom', 'My angle', s.camera === 'custom') : ''
+        }</div></div>
+        <div class="btn-row"><button class="btn" data-act="adjust">${icon('orbit')} Adjust camera</button></div>
+        <div class="field"><div class="field-head"><label>Graphics</label></div>
+        <div class="segmented" role="group" aria-label="Graphics quality">${[
+          ['high', 'Sharp'],
+          ['balanced', 'Balanced'],
+          ['low', 'Fast'],
+        ]
+          .map(([id, name]) => `<button data-act="quality" data-id="${id}" aria-pressed="${s.quality === id}">${name}</button>`)
+          .join('')}</div></div>`
+          : ''
+      }
+    </section>
+    <section class="section">
+      <h3 class="section-title">Skins${custom ? ' · customised' : ''}</h3>
+      <div class="skin-grid">${SKINS.map(
+        (sk) => `<button class="skin-card" data-act="skin" data-id="${sk.id}" aria-pressed="${look.skin === sk.id}">
+          ${skinPreview(sk)}<span class="skin-name">${sk.name}</span></button>`,
+      ).join('')}</div>
+    </section>
+    <section class="section">
+      <h3 class="section-title">Shells</h3>
+      <div class="chips">${SHELL_FINISHES.map((f) => chip('finish', f.id, f.name, look.finish === f.id)).join('')}</div>
+      <div class="swatches">
+        ${SHELL_COLORS.map(
+          (c) =>
+            `<button class="swatch" data-act="color" data-id="${c.id}" aria-pressed="${look.color === c.id}" aria-label="${c.name}" title="${c.name}" style="background: radial-gradient(circle at 35% 30%, ${shade(c.id, 0.2)}, ${shade(c.id, -0.35)})"></button>`,
+        ).join('')}
+        <label class="swatch custom-color" title="Any colour" aria-label="Pick any colour"><input type="color" id="shell-color" value="${look.color}"></label>
+      </div>
+      <div class="btn-row">
+        <button class="btn ${app.state.painting ? 'primary' : ''}" data-act="paint">${icon('brush')} ${app.state.painting ? 'Stop painting' : 'Paint single pieces'}</button>
+        ${painted ? `<button class="btn" data-act="unpaint">Match all (${painted} painted)</button>` : ''}
+      </div>
+      <p class="note">Paint mode puts this shell finish and colour on each drum you tap, and the cymbal finish below on each cymbal.</p>
+    </section>
+    <section class="section">
+      <h3 class="section-title">Cymbals</h3>
+      <div class="chips">${CYMBAL_FINISHES.map((f) => chip('cymbals', f.id, f.name, look.cymbals === f.id)).join('')}</div>
+    </section>
+    <section class="section">
+      <h3 class="section-title">Hardware</h3>
+      <div class="chips">${HARDWARE.map((f) => chip('hardware', f.id, f.name, look.hardware === f.id)).join('')}</div>
+    </section>
+    <section class="section">
+      <h3 class="section-title">Drum heads</h3>
+      <div class="chips">${HEADS.map((f) => chip('heads', f.id, f.name, look.heads === f.id)).join('')}</div>
+    </section>
+    <section class="section">
+      <h3 class="section-title">LED glow</h3>
+      <div class="swatches">${GLOWS.map(
+        (g) =>
+          `<button class="swatch ${g.id ? '' : 'off'}" data-act="glow" data-id="${g.id}" aria-pressed="${look.glow === g.id}" aria-label="${g.name}" title="${g.name}" style="background:${g.id || 'transparent'}"></button>`,
+      ).join('')}</div>
+    </section>
+    <section class="section">
+      <h3 class="section-title">Stage</h3>
+      <div class="chips">${STAGES.map((f) => chip('stage', f.id, f.name, look.stage === f.id)).join('')}</div>
+    </section>
+    <section class="section">
+      <h3 class="section-title">Bass drum logo</h3>
+      <input class="text-input" id="logo-text" maxlength="14" value="${esc(look.logo)}" aria-label="Bass drum logo text">
+    </section>`;
+
+  root.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b || b.disabled) return;
+    const id = b.dataset.id;
+    switch (b.dataset.act) {
+      case 'view':
+        app.setViewMode(id);
+        break;
+      case 'camera':
+        app.setCamera(id);
+        break;
+      case 'adjust':
+        app.startCameraAdjust();
+        break;
+      case 'quality':
+        app.setQuality(id);
+        break;
+      case 'skin':
+        app.applySkin(id);
+        break;
+      case 'paint':
+        app.setPainting(!app.state.painting);
+        break;
+      case 'unpaint':
+        app.updateLook({ pieces: {} });
+        break;
+      case 'finish':
+      case 'color':
+      case 'cymbals':
+      case 'hardware':
+      case 'heads':
+      case 'glow':
+      case 'stage':
+        app.updateLook({ [b.dataset.act]: id });
+        break;
+    }
+  });
+  const picker = root.querySelector('#shell-color');
+  // live preview while dragging, at most a few rebuilds per second
+  let pickTimer = null;
+  picker.addEventListener('input', () => {
+    if (pickTimer) return;
+    pickTimer = setTimeout(() => {
+      pickTimer = null;
+      app.updateLook({ color: picker.value.toLowerCase() }, { refresh: false });
+    }, 200);
+  });
+  picker.addEventListener('change', () => {
+    clearTimeout(pickTimer);
+    pickTimer = null;
+    app.updateLook({ color: picker.value.toLowerCase() });
+  });
+  const logo = root.querySelector('#logo-text');
+  let logoTimer = null;
+  logo.addEventListener('input', () => {
+    clearTimeout(logoTimer);
+    logoTimer = setTimeout(() => app.updateLook({ logo: logo.value }, { refresh: false }), 300);
+  });
+  logo.addEventListener('keydown', (e) => e.stopPropagation());
 }
 
 // -------------------------------------------------------------- settings
@@ -482,6 +624,7 @@ export const PANELS = {
   recordings: { title: 'Recordings', render: renderRecordings },
   lessons: { title: 'Lessons', render: renderLessons },
   kits: { title: 'Kits', render: renderKits },
+  style: { title: 'Style', render: renderStyle },
   settings: { title: 'Settings', render: renderSettings },
 };
 

@@ -6,7 +6,7 @@
     <title>MyDrum</title>
     <meta
       name="description"
-      content="A realistic drum kit in your browser: multi-touch, keyboard and MIDI, play-along loops, recording and lessons."
+      content="A realistic 3D drum kit in your browser: restyle it, play with touch, keyboard or MIDI, jam with backing loops, record and take lessons."
     />
     <meta name="theme-color" content="#120d0b" />
     <meta name="color-scheme" content="dark" />
@@ -86,6 +86,24 @@
         <path d="M10 17h4" />
       </symbol>
       <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" /></symbol>
+      <symbol id="i-palette" viewBox="0 0 24 24">
+        <path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.9 0-1.2-1-1.6-1-2.6 0-.9.8-1.5 1.8-1.5H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3z" />
+        <circle cx="7.5" cy="11.5" r="1.3" />
+        <circle cx="10" cy="7.3" r="1.3" />
+        <circle cx="14.6" cy="7.3" r="1.3" />
+      </symbol>
+      <symbol id="i-brush" viewBox="0 0 24 24">
+        <path d="M20.5 3.5l-9 9M9.3 11.3l3.4 3.4M8.6 13.4c-2.2 0-3.6 1.6-3.6 3.6 0 1-.6 2-1.6 2.5 3.3.6 7.4-.3 7.4-3.7" />
+      </symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24">
+        <path d="M3 8h4l2-3h6l2 3h4v11H3z" />
+        <circle cx="12" cy="13" r="3.5" />
+      </symbol>
+      <symbol id="i-orbit" viewBox="0 0 24 24">
+        <ellipse cx="12" cy="12" rx="9.5" ry="4.5" />
+        <circle cx="12" cy="12" r="2.4" />
+        <path d="M18.5 5.5l2.5.5-.5 2.5" />
+      </symbol>
     </svg>
 
     <div id="app">
@@ -122,11 +140,17 @@
           <button class="tool" data-panel="kits" aria-pressed="false" title="Kits">
             <svg class="ic" aria-hidden="true"><use href="#i-kit"></use></svg><span class="tool-label">Kits</span>
           </button>
+          <button class="tool" data-panel="style" aria-pressed="false" title="Style: colours, finishes and view">
+            <svg class="ic" aria-hidden="true"><use href="#i-palette"></use></svg><span class="tool-label">Style</span>
+          </button>
           <button id="btn-edit" class="tool" title="Move and resize pieces">
             <svg class="ic" aria-hidden="true"><use href="#i-layout"></use></svg><span class="tool-label">Layout</span>
           </button>
           <button class="tool" data-panel="settings" aria-pressed="false" title="Settings">
             <svg class="ic" aria-hidden="true"><use href="#i-settings"></use></svg><span class="tool-label">Settings</span>
+          </button>
+          <button id="btn-camera" class="tool" title="Change the camera view" aria-label="Change the camera view">
+            <svg class="ic" aria-hidden="true"><use href="#i-camera"></use></svg>
           </button>
           <button id="btn-fullscreen" class="tool" title="Fullscreen" aria-label="Fullscreen">
             <svg class="ic" aria-hidden="true"><use href="#i-fullscreen"></use></svg>
@@ -134,7 +158,16 @@
         </div>
 
         <div id="edit-bar" class="edit-bar" hidden>
-          <span class="hint"><strong>Layout</strong>Drag a piece to move it. Drag its handle, pinch or scroll to resize.</span>
+          <span id="edit-hint" class="hint"
+            ><strong>Layout</strong>Drag a piece to move it. Drag its handle, pinch or scroll to resize.</span
+          >
+          <div id="edit-piece" class="edit-piece" hidden>
+            <strong id="edit-piece-name"></strong>
+            <label for="edit-size">Size</label>
+            <input type="range" id="edit-size" min="0" max="1" step="0.005" />
+            <label for="edit-height">Height</label>
+            <input type="range" id="edit-height" min="0" max="1" step="0.005" />
+          </div>
           <button id="btn-pieces" class="tool">
             <svg class="ic" aria-hidden="true"><use href="#i-pieces"></use></svg><span class="tool-label">Pieces</span>
           </button>
@@ -148,10 +181,25 @@
             <svg class="ic" aria-hidden="true"><use href="#i-check"></use></svg><span class="tool-label">Done</span>
           </button>
         </div>
+
+        <div id="camera-bar" class="edit-bar" hidden>
+          <span class="hint"><strong>Camera</strong>Drag to turn around the kit. Pinch or scroll to zoom.</span>
+          <button id="btn-camera-cancel" class="tool">
+            <svg class="ic" aria-hidden="true"><use href="#i-reset"></use></svg><span class="tool-label">Cancel</span>
+          </button>
+          <button id="btn-camera-done" class="tool active">
+            <svg class="ic" aria-hidden="true"><use href="#i-check"></use></svg><span class="tool-label">Save view</span>
+          </button>
+        </div>
       </header>
 
       <main id="stage-wrap" class="stage-wrap" aria-label="Drum kit">
         <div id="stage" class="stage"></div>
+        <div id="paint-bar" class="paint-bar" data-ui hidden>
+          <svg class="ic" aria-hidden="true"><use href="#i-brush"></use></svg>
+          <span>Tap drums and cymbals to paint them</span>
+          <button id="paint-done" class="btn small primary">Done</button>
+        </div>
         <div id="lesson-hud" class="lesson-hud" data-ui hidden>
           <div class="hud-main">
             <div id="hud-title" class="hud-title"></div>

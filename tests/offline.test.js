@@ -14,7 +14,9 @@ function walk(dir) {
 
 test('the service worker precaches every script and stylesheet', () => {
   const sw = readFileSync(join(root, 'sw.js'), 'utf8');
-  const files = [...walk(join(root, 'js')), ...walk(join(root, 'css'))].map((f) => relative(root, f));
+  const files = [...walk(join(root, 'js')), ...walk(join(root, 'css')), ...walk(join(root, 'vendor')).filter((f) => f.endsWith('.js'))].map(
+    (f) => relative(root, f),
+  );
   for (const f of files) assert.ok(sw.includes(`'${f}'`), `${f} missing from sw.js ASSETS`);
 });
 

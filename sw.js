@@ -2,7 +2,7 @@
 // network is unavailable. Same-origin requests go network-first so updates
 // show up immediately; Google Fonts are cached on first use.
 
-const CACHE = 'mydrum-v1';
+const CACHE = 'mydrum-v2';
 const ASSETS = [
   './',
   'index.html',
@@ -24,7 +24,16 @@ const ASSETS = [
   'js/audio/render-worker.js',
   'js/kit/pieces.js',
   'js/kit/layout.js',
-  'js/ui/stage.js',
+  'js/ui/stage2d.js',
+  'js/ui/stage3d.js',
+  'js/kit/looks.js',
+  'js/kit/layout3d.js',
+  'js/three/camera.js',
+  'js/three/materials.js',
+  'js/three/parts.js',
+  'js/three/scenery.js',
+  'js/three/textures.js',
+  'vendor/three.module.min.js',
   'js/ui/panels.js',
   'js/input/midi.js',
   'js/music/theory.js',

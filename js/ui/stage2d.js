@@ -1,8 +1,10 @@
-// The playable stage: draws the kit, turns touches and clicks into hits,
-// animates pads, and handles the drag/resize layout editor.
+// The classic 2D stage: draws the kit seen from above with CSS, turns
+// touches and clicks into hits, animates pads, and handles the drag/resize
+// layout editor. Used when 3D is switched off or unavailable.
 
 import { STAGE_W, STAGE_H, projectLayout, stageFrame, hitTest, clampItem, MIN_SIZE, MAX_SIZE } from '../kit/layout.js';
 import { PIECES, PIECE_BY_ID, keyLabel } from '../kit/pieces.js';
+import { shellFor, cymbalFor, shade, pieceSurface } from '../kit/looks.js';
 
 const reduceMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -48,7 +50,7 @@ function createPad(piece) {
   return el;
 }
 
-export class Stage {
+export class Stage2D {
   /**
    * @param {object} o
    * @param {HTMLElement} o.wrap   element that receives pointer input
@@ -89,17 +91,70 @@ export class Stage {
       el.appendChild(pad);
     }
 
-    wrap.addEventListener('pointerdown', (e) => this.onPointerDown(e), { passive: false });
-    wrap.addEventListener('pointermove', (e) => this.onPointerMove(e));
-    wrap.addEventListener('pointerup', (e) => this.onPointerUp(e));
-    wrap.addEventListener('pointercancel', (e) => this.onPointerUp(e));
-    wrap.addEventListener('contextmenu', (e) => e.preventDefault());
-    wrap.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
-    if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => this.resize()).observe(wrap);
-    else window.addEventListener('resize', () => this.resize());
+    const signal = (this.abort = new AbortController()).signal;
+    wrap.addEventListener('pointerdown', (e) => this.onPointerDown(e), { passive: false, signal });
+    wrap.addEventListener('pointermove', (e) => this.onPointerMove(e), { signal });
+    wrap.addEventListener('pointerup', (e) => this.onPointerUp(e), { signal });
+    wrap.addEventListener('pointercancel', (e) => this.onPointerUp(e), { signal });
+    wrap.addEventListener('contextmenu', (e) => e.preventDefault(), { signal });
+    wrap.addEventListener('wheel', (e) => this.onWheel(e), { passive: false, signal });
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(wrap);
 
     this.tick = this.tick.bind(this);
-    requestAnimationFrame(this.tick);
+    this.raf = requestAnimationFrame(this.tick);
+  }
+
+  destroy() {
+    this.destroyed = true;
+    cancelAnimationFrame(this.raf);
+    this.abort.abort();
+    this.resizeObserver.disconnect();
+    this.el.replaceChildren();
+    this.el.removeAttribute('style');
+    this.el.className = 'stage';
+    for (const k of Object.keys(this.el.dataset)) delete this.el.dataset[k];
+    delete this.wrap.dataset.stage;
+  }
+
+  /** Colours and finishes from the look (see kit/looks.js), as CSS variables. */
+  setLook(look) {
+    const el = this.el;
+    el.dataset.hardware = look.hardware;
+    el.dataset.heads = look.heads;
+    if (look.glow) {
+      el.dataset.glow = 'on';
+      el.style.setProperty('--glow', look.glow);
+    } else {
+      delete el.dataset.glow;
+    }
+    this.wrap.dataset.stage = look.stage;
+    for (const [id, pad] of this.pads) {
+      const surface = pieceSurface(id);
+      if (surface === 'shell') {
+        const { finish, color } = shellFor(look, id);
+        pad.dataset.finish = finish;
+        pad.style.setProperty('--wrap-1', shade(color, 0.14));
+        pad.style.setProperty('--wrap-2', shade(color, -0.42));
+      } else if (surface === 'cymbal') {
+        pad.dataset.cymbals = cymbalFor(look, id);
+      }
+    }
+    const logo = this.pads.get('kick')?.querySelector('.logo');
+    if (logo) logo.textContent = look.logo || ' ';
+  }
+
+  // the 2D view has no camera or 3D layout
+  setView() {}
+  setLayout3d() {}
+  setQuality() {}
+
+  /** Client coordinates of a piece's centre, for tests and tooling. */
+  screenPoint(id) {
+    const pad = this.pads.get(id);
+    if (!pad || pad.hidden) return null;
+    const r = pad.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   }
 
   setLayout(layout, mirror) {
@@ -108,14 +163,13 @@ export class Stage {
     this.resize();
   }
 
-  setOptions({ labels, keys, zones, finish, pressure, velocity }) {
+  setOptions({ labels, keys, zones, pressure, velocity }) {
     if (labels !== undefined) this.el.classList.toggle('no-labels', !labels);
     if (keys !== undefined) this.el.classList.toggle('no-keys', !keys);
     if (zones !== undefined) {
       this.zones = zones;
       this.el.classList.toggle('zones', zones);
     }
-    if (finish !== undefined) this.el.dataset.finish = finish;
     if (pressure !== undefined) this.pressure = pressure;
     if (velocity !== undefined) this.defaultVelocity = velocity;
   }
@@ -442,8 +496,9 @@ export class Stage {
   }
 
   tick() {
+    if (this.destroyed) return;
     const now = this.getVisualTime();
     while (this.queue.length && this.queue[0].t <= now) this.queue.shift().run();
-    requestAnimationFrame(this.tick);
+    this.raf = requestAnimationFrame(this.tick);
   }
 }

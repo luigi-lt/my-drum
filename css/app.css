@@ -489,12 +489,49 @@ button {
   mix-blend-mode: overlay;
 }
 
-.stage[data-finish='red'] .pad .shell::after,
-.stage[data-finish='blue'] .pad .shell::after {
+.pad[data-finish='sparkle'] .shell::after {
   background-image: var(--sparkle);
   background-size: 90px;
   opacity: 0.7;
   mix-blend-mode: screen;
+}
+
+.pad[data-finish='wood'] .shell::after {
+  background-image:
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(40, 18, 4, 0.22) 0 1.5deg,
+      transparent 1.5deg 4deg,
+      rgba(255, 220, 170, 0.12) 4deg 5deg,
+      transparent 5deg 9deg
+    ),
+    var(--noise);
+  background-size: auto, 140px;
+  opacity: 0.9;
+  mix-blend-mode: multiply;
+}
+
+.pad[data-finish='pearl'] .shell::after {
+  background:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.35), transparent 30%),
+    radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.25), transparent 35%),
+    conic-gradient(from 30deg, rgba(255, 190, 220, 0.25), rgba(170, 220, 255, 0.25), rgba(255, 240, 190, 0.25), rgba(255, 190, 220, 0.25));
+  opacity: 1;
+  mix-blend-mode: soft-light;
+}
+
+.pad[data-finish='metallic'] .shell {
+  background:
+    radial-gradient(circle, transparent 66%, rgba(0, 0, 0, 0.35) 70%, transparent 74%),
+    conic-gradient(from 20deg, var(--wrap-1), var(--wrap-2), var(--wrap-1), var(--wrap-2), var(--wrap-1));
+}
+
+.pad[data-finish='satin'] .shell {
+  background: radial-gradient(circle, color-mix(in srgb, var(--wrap-1) 45%, var(--wrap-2)) 0 100%);
+}
+
+.pad[data-finish='satin'] .shell::after {
+  opacity: 0.15;
 }
 
 .pad .lugs {
@@ -682,17 +719,37 @@ button {
   --bell: 13%;
 }
 
+.pad.finish-china .cym {
+  filter: sepia(0.35) saturate(1.25) hue-rotate(-10deg) brightness(0.9);
+}
+
 .pad.finish-china .disc {
-  background:
-    radial-gradient(circle, transparent 0 78%, rgba(30, 10, 0, 0.45) 80%, rgba(255, 210, 160, 0.18) 84%, transparent 88%),
-    repeating-radial-gradient(circle, rgba(255, 230, 200, 0.1) 0 1px, rgba(60, 20, 0, 0.16) 1px 2.4px),
-    conic-gradient(from 140deg, #6e3112, #e4a060 12%, #a35a25 26%, #eab074 40%, #6e3112 52%, #d8925a 66%, #9b4f1f 80%, #e7a86a 90%, #6e3112);
+  box-shadow:
+    0 16px 30px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 calc(var(--d) * 0.05) rgba(40, 14, 0, 0.35);
 }
 
 .pad.finish-china .bell {
   inset: 34%;
-  border-radius: 50%;
-  background: radial-gradient(circle at 45% 40%, #e9ad72, #a35a25 70%, #5d2a0d 72%, #8c4a1c);
+}
+
+/* cymbal finishes */
+.pad[data-cymbals='brilliant'] {
+  --brass-1: #fff1c8;
+  --brass-2: #e2b55a;
+  --brass-3: #b4832d;
+}
+
+.pad[data-cymbals='dark'] {
+  --brass-1: #b8925a;
+  --brass-2: #8b6a3c;
+  --brass-3: #4e3a20;
+}
+
+.pad[data-cymbals='black'] {
+  --brass-1: #5a5a60;
+  --brass-2: #26262a;
+  --brass-3: #0e0e10;
 }
 
 /* hi-hats */
@@ -1852,33 +1909,345 @@ select,
   }
 }
 
-/* shell finishes */
-.stage[data-finish='maple'] {
-  --wrap-1: #d08a47;
-  --wrap-2: #7a4720;
+/* hardware */
+.stage[data-hardware='black'] {
+  --chrome-1: #6a6e75;
+  --chrome-2: #2c2f34;
+  --chrome-3: #121315;
 }
 
-.stage[data-finish='red'] {
-  --wrap-1: #c4222e;
-  --wrap-2: #5a0910;
+.stage[data-hardware='gold'] {
+  --chrome-1: #fff0bf;
+  --chrome-2: #c99a3a;
+  --chrome-3: #7d5a18;
 }
 
-.stage[data-finish='black'] {
-  --wrap-1: #3c3c41;
-  --wrap-2: #0b0b0d;
+/* drum heads */
+.stage[data-heads='clear'] {
+  --head-1: #e9ebe6;
+  --head-2: #bfc2bb;
+  --head-3: #8d918a;
 }
 
-.stage[data-finish='white'] {
-  --wrap-1: #f1ede6;
-  --wrap-2: #a39b8e;
+.stage[data-heads='black'] {
+  --head-1: #4a4a4e;
+  --head-2: #232326;
+  --head-3: #111113;
 }
 
-.stage[data-finish='blue'] {
-  --wrap-1: #2f6bd0;
-  --wrap-2: #0e2350;
+.stage[data-heads='mesh'] {
+  --head-1: #3b3e44;
+  --head-2: #2a2c31;
+  --head-3: #1b1c20;
 }
 
-.stage[data-finish='green'] {
-  --wrap-1: #3f8f5a;
-  --wrap-2: #12331f;
+.stage[data-heads='mesh'] .pad .head::after {
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.45) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.45) 0 1px, transparent 1px 4px);
+  opacity: 1;
+}
+
+/* LED glow on the hoops */
+.stage[data-glow] .pad .hoop {
+  box-shadow:
+    0 0 0 2px var(--glow),
+    0 0 18px var(--glow);
+}
+
+/* stage moods for the 2D view */
+.stage-wrap[data-stage='studio'] {
+  background: radial-gradient(110% 85% at 50% -12%, rgba(255, 246, 230, 0.22), transparent 58%), linear-gradient(#3a332c, #241f1a);
+}
+
+.stage-wrap[data-stage='arena'] {
+  background:
+    radial-gradient(60% 70% at 15% -10%, rgba(255, 63, 164, 0.22), transparent 60%),
+    radial-gradient(60% 70% at 85% -10%, rgba(46, 230, 214, 0.2), transparent 60%), linear-gradient(#0a0b12, #05060a);
+}
+
+/* ------------------------------------------------------------ 3D view */
+
+.stage3d {
+  position: absolute;
+  inset: 0;
+}
+
+.stage3d canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.overlay3d {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.tag3d {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px 1px;
+  background-color: rgba(233, 227, 213, 0.92);
+  color: var(--tape-ink);
+  font-family: var(--font-marker);
+  font-size: 13px;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  clip-path: polygon(0 6%, 4% 0, 96% 3%, 100% 0, 99% 94%, 95% 100%, 3% 97%, 0 100%);
+  will-change: transform;
+}
+
+.tag3d .tag-key {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(14, 10, 8, 0.82);
+  color: var(--ink);
+}
+
+.stage3d.no-labels .tag-name,
+.stage3d.no-keys .tag-key,
+.stage3d.no-labels.no-keys .tag3d {
+  display: none;
+}
+
+.overlay3d .judge {
+  font-size: 30px;
+}
+
+/* ---------------------------------------------------------- style panel */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 17px;
+  border: 1px solid var(--line-strong);
+  background: var(--panel-2);
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.chip:hover {
+  border-color: rgba(243, 230, 214, 0.35);
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: var(--amber-ink);
+}
+
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(102px, 1fr));
+  gap: 10px;
+}
+
+.skin-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 6px 9px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
+.skin-card:hover {
+  border-color: var(--line-strong);
+}
+
+.skin-card[aria-pressed='true'] {
+  border-color: var(--amber);
+  box-shadow: inset 0 0 0 1px var(--amber);
+}
+
+.skin-name {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.skin-preview {
+  position: relative;
+  width: 80px;
+  height: 58px;
+}
+
+.sp-drum {
+  position: absolute;
+  left: 4px;
+  bottom: 0;
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--c1), var(--c2) 75%);
+  box-shadow:
+    0 0 0 3px var(--hw),
+    0 0 12px var(--glow),
+    0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.skin-preview[data-finish='sparkle'] .sp-drum::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background-image: var(--sparkle);
+  background-size: 40px;
+  mix-blend-mode: screen;
+  opacity: 0.7;
+}
+
+.skin-preview[data-finish='wood'] .sp-drum {
+  background:
+    repeating-conic-gradient(from 0deg, rgba(40, 18, 4, 0.25) 0 2deg, transparent 2deg 6deg),
+    radial-gradient(circle at 35% 30%, var(--c1), var(--c2) 75%);
+}
+
+.sp-head {
+  position: relative;
+  z-index: 1;
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--head) 70%, white), var(--head));
+  box-shadow: 0 0 0 2px var(--hw);
+}
+
+.sp-cym {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle, rgba(255, 255, 255, 0.12) 0 1px, rgba(0, 0, 0, 0.1) 1px 2.5px),
+    radial-gradient(circle at 40% 35%, color-mix(in srgb, var(--cym) 55%, white), var(--cym));
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.45);
+}
+
+.swatch.off {
+  background: linear-gradient(135deg, transparent 45%, var(--muted) 45% 55%, transparent 55%) !important;
+}
+
+.custom-color {
+  display: grid;
+  overflow: hidden;
+  cursor: pointer;
+  background: conic-gradient(#ff4d4d, #ffd84d, #6dff6d, #4dfcff, #4d6dff, #ff4dff, #ff4d4d);
+}
+
+.custom-color input {
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* layout editor: selected piece controls (3D) */
+.edit-piece {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+}
+
+.edit-piece strong {
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.edit-piece label {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+
+.edit-piece input[type='range'] {
+  width: clamp(70px, 12vw, 160px);
+}
+
+.edit-piece input:disabled {
+  opacity: 0.35;
+}
+
+/* paint mode banner */
+.paint-bar {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 12px;
+  background: rgba(18, 13, 11, 0.94);
+  border: 1px solid var(--amber);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  z-index: 21;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.paint-bar .ic {
+  color: var(--amber);
+}
+
+body[data-view='2d'] #btn-camera {
+  display: none;
+}
+
+/* smaller 3D labels on phone-sized screens */
+@media (max-height: 460px), (max-width: 700px) {
+  .tag3d {
+    gap: 4px;
+    padding: 1px 6px 0;
+    font-size: 11px;
+  }
+
+  .tag3d .tag-key {
+    font-size: 10px;
+    padding: 0 4px;
+  }
+}
+
+#app.rotated .tag3d {
+  font-size: 11px;
+  padding: 1px 6px 0;
 }

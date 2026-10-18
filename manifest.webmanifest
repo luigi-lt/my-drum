@@ -1,7 +1,7 @@
 {
   "name": "MyDrum",
   "short_name": "MyDrum",
-  "description": "A realistic drum kit in your browser with play-along loops, recording and lessons.",
+  "description": "A realistic 3D drum kit in your browser with custom styles, play-along loops, recording and lessons.",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",

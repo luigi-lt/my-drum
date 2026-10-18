@@ -3,9 +3,13 @@
 
 import { DrumEngine } from './audio/engine.js';
 import { KITS } from './audio/kits.js';
-import { KEY_MAP } from './kit/pieces.js';
+import { KEY_MAP, PIECE_BY_ID } from './kit/pieces.js';
 import { mergeLayout, defaultLayout } from './kit/layout.js';
-import { Stage } from './ui/stage.js';
+import { mergeLayout3d, defaultLayout3d, LIMITS } from './kit/layout3d.js';
+import { normalizeLook, lookFromSkin, paintPiece, pieceSurface } from './kit/looks.js';
+import { Stage2D } from './ui/stage2d.js';
+import { Stage3D, webglSupported } from './ui/stage3d.js';
+import { VIEWS, VIEW_ORDER } from './three/camera.js';
 import { createPanelHost, esc, icon } from './ui/panels.js';
 import { loadSettings, createStore, clearSettings, dbAll, dbPut, dbDelete } from './storage.js';
 import { Transport, MetronomeTrack, LoopTrack } from './music/transport.js';
@@ -39,7 +43,12 @@ const inFrame = (() => {
 export const DEFAULTS = {
   kit: 'studio',
   customBase: 'studio',
-  finish: 'maple',
+  view: '3d',
+  quality: coarse ? 'balanced' : 'high',
+  camera: 'drummer',
+  cameraCustom: null,
+  look: null,
+  layout3d: null,
   volume: 0.85,
   room: 0.25,
   backingVolume: 0.6,
@@ -68,6 +77,8 @@ export const DEFAULTS = {
 
 const settings = createStore(loadSettings(DEFAULTS));
 let layout = mergeLayout(settings.get().layout);
+let layout3d = mergeLayout3d(settings.get().layout3d);
+let look = normalizeLook(settings.get().look);
 
 const state = {
   loopPlaying: false,
@@ -78,19 +89,57 @@ const state = {
   customSamples: new Map(),
   loadingKit: null,
   loopTouched: false,
+  painting: false,
+  view: '2d',
+  webgl: webglSupported(),
   inFrame,
 };
 
 const engine = new DrumEngine();
 const getVisualTime = () => engine.ctx.currentTime - engine.latency;
 
-const stage = new Stage({
-  wrap: $('#stage-wrap'),
-  el: $('#stage'),
-  onHit: play,
-  onLayoutEdit: saveLayout,
-  getVisualTime,
-});
+// The visible stage is either the 3D or the classic 2D one; everything else
+// talks to it through this forwarding proxy so the view can switch live.
+let currentStage = null;
+const stage = new Proxy(
+  {},
+  {
+    get(_, key) {
+      const v = currentStage?.[key];
+      return typeof v === 'function' ? v.bind(currentStage) : v;
+    },
+    set(_, key, value) {
+      currentStage[key] = value;
+      return true;
+    },
+  },
+);
+
+function createStage() {
+  const s = settings.get();
+  const use3d = s.view === '3d' && state.webgl;
+  if (currentStage?.editing) exitEdit();
+  if (currentStage?.adjusting) stopCameraAdjust(false);
+  currentStage?.destroy();
+  const common = { wrap: $('#stage-wrap'), onHit: play, getVisualTime };
+  if (use3d) {
+    currentStage = new Stage3D({
+      ...common,
+      onLayoutEdit: saveLayout3d,
+      onEditSelect: showEditSelection,
+      onCameraChange: saveCustomCamera,
+      init: { look, layout, layout3d, mirror: s.mirror, quality: s.quality, view: s.camera, customView: s.cameraCustom },
+    });
+  } else {
+    currentStage = new Stage2D({ ...common, el: $('#stage'), onLayoutEdit: saveLayout });
+    currentStage.setLook(look);
+    currentStage.setLayout(layout, s.mirror);
+  }
+  state.view = use3d ? '3d' : '2d';
+  document.body.dataset.view = state.view;
+  applyStageOptions(s);
+  checkOrientation();
+}
 
 const transport = new Transport(engine.ctx, { backing: engine.mixer.backingBus, click: engine.mixer.clickBus });
 const metronome = transport.addTrack(new MetronomeTrack());
@@ -120,8 +169,9 @@ const midi = new MidiInput(
 
 function play(pieceId, sound, velocity, info = {}) {
   engine.unlock();
+  if (state.painting && info.source === 'touch' && pieceSurface(pieceId)) setLook(paintPiece(look, pieceId), { refresh: false });
   const t = engine.trigger(sound, velocity);
-  stage.flash(pieceId, velocity, info.source === 'touch' ? { x: info.x, y: info.y } : null);
+  stage.flash(pieceId, velocity, info.source === 'touch' ? info : null);
   if (t !== null) recorder.addHit(sound, velocity, t);
   if (lessons.active) lessons.hit(pieceId, getVisualTime());
   if (info.source === 'touch' && settings.get().vibrate) navigator.vibrate?.(8);
@@ -133,6 +183,8 @@ window.addEventListener('keydown', (e) => {
   if (target.closest?.('input, select, textarea, [contenteditable="true"]')) return;
   if (e.key === 'Escape') {
     if (!$('#piece-pop').hidden) $('#piece-pop').hidden = true;
+    else if (state.painting) setPainting(false);
+    else if (stage.adjusting) stopCameraAdjust(false);
     else if (document.querySelector('.modal-back')) closeModal();
     else if (panels.current) panels.close();
     else if (stage.editing) exitEdit();
@@ -476,11 +528,24 @@ function saveLayout(l) {
   settings.set({ layout: serializeLayout(l) });
 }
 
+function saveLayout3d(l) {
+  const out = {};
+  const r = (v) => Math.round(v * 1000) / 1000;
+  for (const [id, it] of Object.entries(l)) out[id] = { x: r(it.x), z: r(it.z), h: r(it.h), d: r(it.d) };
+  settings.set({ layout3d: out });
+}
+
 function enterEdit() {
   panels.close();
+  setPainting(false);
   if (lessons.active) stopLesson();
   stage.setEditing(true);
   $('#edit-bar').hidden = false;
+  $('#edit-hint').innerHTML =
+    state.view === '3d'
+      ? '<strong>Layout</strong>Tap a piece to select it, then drag to move it. Pinch or scroll to resize.'
+      : '<strong>Layout</strong>Drag a piece to move it. Drag its handle, pinch or scroll to resize.';
+  showEditSelection(null);
   updateEditBar();
 }
 
@@ -489,7 +554,39 @@ function exitEdit() {
   $('#edit-bar').hidden = true;
   $('#piece-pop').hidden = true;
   saveLayout(layout);
+  if (state.view === '3d') saveLayout3d(layout3d);
   toast('Layout saved.');
+}
+
+// size and height sliders for the selected piece in the 3D editor
+const editSize = $('#edit-size');
+const editHeight = $('#edit-height');
+let editing3dId = null;
+
+function showEditSelection(id, item = id ? layout3d[id] : null) {
+  editing3dId = id;
+  $('#edit-piece').hidden = !id;
+  $('#edit-hint').hidden = !!id;
+  if (!id) return;
+  const lim = LIMITS[PIECE_BY_ID[id].kind];
+  $('#edit-piece-name').textContent = PIECE_BY_ID[id].name;
+  const toUnit = (v, [lo, hi]) => (hi > lo ? (v - lo) / (hi - lo) : 0);
+  editSize.disabled = lim.d[0] === lim.d[1];
+  editSize.value = toUnit(item.d, lim.d);
+  editHeight.disabled = !lim.h;
+  editHeight.value = lim.h ? toUnit(item.h, lim.h) : 0;
+}
+
+for (const [input, key] of [
+  [editSize, 'd'],
+  [editHeight, 'h'],
+]) {
+  input.addEventListener('input', () => {
+    if (!editing3dId) return;
+    const range = LIMITS[PIECE_BY_ID[editing3dId].kind][key];
+    if (!range) return;
+    stage.setPieceProps(editing3dId, { [key]: range[0] + (range[1] - range[0]) * Number(input.value) });
+  });
 }
 
 function updateEditBar() {
@@ -530,9 +627,18 @@ $('#edit-bar').addEventListener('click', (e) => {
     if (resetArmed) {
       clearTimeout(resetArmed);
       resetArmed = null;
-      layout = defaultLayout();
-      stage.setLayout(layout, settings.get().mirror);
-      saveLayout(layout);
+      const hidden = Object.fromEntries(Object.entries(layout).map(([id, it]) => [id, it.hidden]));
+      if (state.view === '3d') {
+        layout3d = defaultLayout3d();
+        stage.setLayout3d(layout3d);
+        saveLayout3d(layout3d);
+        showEditSelection(null);
+      } else {
+        layout = defaultLayout();
+        for (const [id, h] of Object.entries(hidden)) layout[id].hidden = h;
+        stage.setLayout(layout, settings.get().mirror);
+        saveLayout(layout);
+      }
       b.querySelector('.tool-label').textContent = 'Reset';
       toast('Layout reset to the standard kit.');
       if (!$('#piece-pop').hidden) renderPiecePop();
@@ -545,6 +651,69 @@ $('#edit-bar').addEventListener('click', (e) => {
     }
   }
 });
+
+// ----------------------------------------------------------------- style
+
+function setLook(next, { refresh = true } = {}) {
+  look = next;
+  settings.set({ look });
+  stage.setLook(look);
+  if (refresh) panels.refresh('style');
+}
+
+function setPainting(on) {
+  state.painting = on;
+  $('#paint-bar').hidden = !on;
+  if (on) {
+    panels.close();
+    if (stage.editing) exitEdit();
+  }
+  panels.refresh('style');
+}
+
+$('#paint-done').addEventListener('click', () => {
+  setPainting(false);
+  panels.open('style');
+});
+
+function setCamera(name) {
+  if (state.view !== '3d') return;
+  const s = settings.get();
+  if (name === 'custom' && !s.cameraCustom) name = 'drummer';
+  settings.set({ camera: name });
+  stage.setView(name, s.cameraCustom);
+  panels.refresh('style');
+}
+
+function cycleCamera() {
+  const s = settings.get();
+  const order = s.cameraCustom ? [...VIEW_ORDER, 'custom'] : VIEW_ORDER;
+  const next = order[(order.indexOf(s.camera) + 1) % order.length];
+  setCamera(next);
+  toast(next === 'custom' ? 'My camera angle' : `${VIEWS[next].name} view`);
+}
+
+function saveCustomCamera(name, custom) {
+  settings.set({ camera: name, cameraCustom: custom });
+}
+
+function startCameraAdjust() {
+  if (state.view !== '3d') return;
+  panels.close();
+  setPainting(false);
+  if (stage.editing) exitEdit();
+  stage.startAdjust();
+  $('#camera-bar').hidden = false;
+}
+
+function stopCameraAdjust(save) {
+  stage.stopAdjust(save);
+  $('#camera-bar').hidden = true;
+  if (save) toast('Camera angle saved. Find it as "My angle" in Style.');
+}
+
+$('#btn-camera-done').addEventListener('click', () => stopCameraAdjust(true));
+$('#btn-camera-cancel').addEventListener('click', () => stopCameraAdjust(false));
 
 // -------------------------------------------------------------- toolbar
 
@@ -589,11 +758,8 @@ const panels = createPanelHost(
     },
     startLesson,
     async selectKit(id, base) {
-      const s = settings.get();
       const patch = { kit: id };
       if (base) patch.customBase = base;
-      const meta = KITS.find((k) => k.id === id);
-      if (meta && id !== s.kit) patch.finish = meta.finish;
       settings.set(patch);
       panels.refresh('kits');
       await applyKit();
@@ -619,6 +785,26 @@ const panels = createPanelHost(
       state.customSamples.delete(sound);
       applyOverrides();
       panels.refresh('kits');
+    },
+    getLook: () => look,
+    updateLook(patch, opts) {
+      setLook({ ...look, ...patch }, opts);
+    },
+    applySkin(id) {
+      setLook(lookFromSkin(id, look.logo));
+    },
+    setPainting,
+    setCamera,
+    startCameraAdjust,
+    setQuality(q) {
+      settings.set({ quality: q });
+      stage.setQuality(q);
+      panels.refresh('style');
+    },
+    setViewMode(v) {
+      settings.set({ view: v });
+      createStage();
+      panels.refresh('style');
     },
     async connectMidi() {
       try {
@@ -680,6 +866,7 @@ document.querySelector('.toolbar').addEventListener('click', (e) => {
   else if (b.id === 'btn-record') toggleRecord();
   else if (b.id === 'btn-edit') enterEdit();
   else if (b.id === 'btn-fullscreen') toggleFullscreen();
+  else if (b.id === 'btn-camera') cycleCamera();
 });
 
 function toggleCurrentLoop() {
@@ -791,7 +978,7 @@ function checkOrientation() {
   app.classList.toggle('rotated', turn);
   app.style.width = turn ? `${window.innerHeight}px` : '';
   app.style.height = turn ? `${window.innerWidth}px` : '';
-  stage.rotated = turn;
+  if (currentStage) stage.rotated = turn;
   $('#rotate-hint').hidden = !portrait || choice !== '';
 }
 window.addEventListener('resize', checkOrientation);
@@ -805,7 +992,6 @@ function applyStageOptions(s) {
     labels: s.labels,
     keys: s.keys,
     zones: s.zones,
-    finish: s.finish,
     pressure: s.pressure,
     velocity: s.velocity,
   });
@@ -831,10 +1017,9 @@ async function boot() {
   engine.setMirror(s.mirror);
   transport.bpm = s.bpm;
   transport.beatsPerBar = s.beatsPerBar;
-  applyStageOptions(s);
-  stage.setLayout(layout, s.mirror);
+  createStage();
+  if (s.view === '3d' && !state.webgl) toast('3D graphics are not available here, so the kit is shown in 2D.');
   updateToolbar();
-  checkOrientation();
   requestAnimationFrame(uiTick);
 
   await applyKit();
@@ -852,4 +1037,4 @@ async function boot() {
 boot();
 
 // handy for debugging and for the automated smoke test
-window.myDrum = { engine, transport, stage, settings, state, recorder, lessons, play };
+window.myDrum = { engine, transport, stage, settings, state, recorder, lessons, play, getLook: () => look };
