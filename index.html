@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <title>MyDrum</title>
+    <meta
+      name="description"
+      content="A realistic 3D drum kit in your browser: restyle it, play with touch, keyboard or MIDI, jam with backing loops, record and take lessons."
+    />
+    <meta name="theme-color" content="#120d0b" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MyDrum" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Big+Shoulders+Display:wght@700;800&family=Permanent+Marker&display=swap"
+    />
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" /></symbol>
+      <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5" /></symbol>
+      <symbol id="i-record" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5" /></symbol>
+      <symbol id="i-metronome" viewBox="0 0 24 24"><path d="M9 3h6l4 18H5zM7.5 15h9M12 16l5-10" /></symbol>
+      <symbol id="i-loops" viewBox="0 0 24 24">
+        <path d="M9 18V6l11-2v12" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="17" cy="16" r="3" />
+      </symbol>
+      <symbol id="i-tape" viewBox="0 0 24 24">
+        <rect x="2.5" y="5.5" width="19" height="13" rx="2" />
+        <circle cx="8" cy="12" r="2.2" />
+        <circle cx="16" cy="12" r="2.2" />
+        <path d="M8 14.2h8M6 18.5l1.5-2.5h9l1.5 2.5" />
+      </symbol>
+      <symbol id="i-lessons" viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5zM6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5M22 9v6" /></symbol>
+      <symbol id="i-kit" viewBox="0 0 24 24">
+        <ellipse cx="12" cy="9" rx="8" ry="3" />
+        <path d="M4 9v7c0 1.7 3.6 3 8 3s8-1.3 8-3V9M8 2.5l3.5 6M16 2.5l-3.5 6" />
+      </symbol>
+      <symbol id="i-layout" viewBox="0 0 24 24">
+        <path d="M12 2.5v19M2.5 12h19M12 2.5l-3 3M12 2.5l3 3M12 21.5l-3-3M12 21.5l3-3M2.5 12l3-3M2.5 12l3 3M21.5 12l-3-3M21.5 12l-3 3" />
+      </symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24">
+        <path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1" />
+        <circle cx="15" cy="6" r="2" />
+        <circle cx="9" cy="12" r="2" />
+        <circle cx="17" cy="18" r="2" />
+      </symbol>
+      <symbol id="i-fullscreen" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" /></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" /></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 20V9M7 14l5-5 5 5M5 4h14" /></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" /></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></symbol>
+      <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.6M4 4v4.6h4.6" /></symbol>
+      <symbol id="i-mirror" viewBox="0 0 24 24"><path d="M12 3v18M8 7l-5 5 5 5M16 7l5 5-5 5" /></symbol>
+      <symbol id="i-pieces" viewBox="0 0 24 24">
+        <path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z" />
+        <circle cx="12" cy="12" r="3" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></symbol>
+      <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" /></symbol>
+      <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></symbol>
+      <symbol id="i-tap" viewBox="0 0 24 24">
+        <path
+          d="M9 11V5.5a2 2 0 0 1 4 0V11M13 9.5a2 2 0 0 1 4 0V13M17 11.5a2 2 0 0 1 3 1.7V15a7 7 0 0 1-7 7h-1a7 7 0 0 1-5.6-2.8L4 16.5a2 2 0 0 1 3-2.6L9 16"
+        />
+      </symbol>
+      <symbol id="i-midi" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="7.5" cy="12" r="1" />
+        <circle cx="16.5" cy="12" r="1" />
+        <circle cx="9" cy="8" r="1" />
+        <circle cx="15" cy="8" r="1" />
+        <circle cx="12" cy="7" r="1" />
+        <path d="M10 17h4" />
+      </symbol>
+      <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z" /></symbol>
+      <symbol id="i-palette" viewBox="0 0 24 24">
+        <path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.9 0-1.2-1-1.6-1-2.6 0-.9.8-1.5 1.8-1.5H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3z" />
+        <circle cx="7.5" cy="11.5" r="1.3" />
+        <circle cx="10" cy="7.3" r="1.3" />
+        <circle cx="14.6" cy="7.3" r="1.3" />
+      </symbol>
+      <symbol id="i-brush" viewBox="0 0 24 24">
+        <path d="M20.5 3.5l-9 9M9.3 11.3l3.4 3.4M8.6 13.4c-2.2 0-3.6 1.6-3.6 3.6 0 1-.6 2-1.6 2.5 3.3.6 7.4-.3 7.4-3.7" />
+      </symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24">
+        <path d="M3 8h4l2-3h6l2 3h4v11H3z" />
+        <circle cx="12" cy="13" r="3.5" />
+      </symbol>
+      <symbol id="i-orbit" viewBox="0 0 24 24">
+        <ellipse cx="12" cy="12" rx="9.5" ry="4.5" />
+        <circle cx="12" cy="12" r="2.4" />
+        <path d="M18.5 5.5l2.5.5-.5 2.5" />
+      </symbol>
+    </svg>
+
+    <div id="app">
+      <header class="toolbar" aria-label="Controls">
+        <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">MyDrum</span></div>
+        <div class="divider"></div>
+        <div class="tool-group">
+          <button id="btn-loop" class="tool" aria-pressed="false" aria-label="Play backing loop" title="Play or stop the backing loop">
+            <svg class="ic fill" aria-hidden="true"><use href="#i-play"></use></svg>
+            <span class="tool-label">Loop</span>
+            <span id="loop-name" class="tool-sub">Rock Anthem</span>
+          </button>
+          <button id="btn-metronome" class="tool" aria-pressed="false" title="Metronome">
+            <svg class="ic" aria-hidden="true"><use href="#i-metronome"></use></svg>
+            <span class="tool-label">Click</span>
+          </button>
+          <button id="btn-bpm" class="bpm" title="Tempo and play-along settings"><span id="bpm-value">120</span><small>BPM</small></button>
+          <div id="beat-dots" class="beat-dots" aria-hidden="true"></div>
+          <button id="btn-record" class="tool rec" aria-label="Start recording" title="Record">
+            <svg class="ic fill" aria-hidden="true"><use href="#i-record"></use></svg>
+            <span id="rec-time" class="rec-time">Rec</span>
+          </button>
+        </div>
+        <div class="tool-group right">
+          <button class="tool" data-panel="loops" aria-pressed="false" title="Play-along">
+            <svg class="ic" aria-hidden="true"><use href="#i-loops"></use></svg><span class="tool-label">Play-along</span>
+          </button>
+          <button class="tool" data-panel="recordings" aria-pressed="false" title="Recordings">
+            <svg class="ic" aria-hidden="true"><use href="#i-tape"></use></svg><span class="tool-label">Recordings</span>
+          </button>
+          <button class="tool" data-panel="lessons" aria-pressed="false" title="Lessons">
+            <svg class="ic" aria-hidden="true"><use href="#i-lessons"></use></svg><span class="tool-label">Lessons</span>
+          </button>
+          <button class="tool" data-panel="kits" aria-pressed="false" title="Kits">
+            <svg class="ic" aria-hidden="true"><use href="#i-kit"></use></svg><span class="tool-label">Kits</span>
+          </button>
+          <button class="tool" data-panel="style" aria-pressed="false" title="Style: colours, finishes and view">
+            <svg class="ic" aria-hidden="true"><use href="#i-palette"></use></svg><span class="tool-label">Style</span>
+          </button>
+          <button id="btn-edit" class="tool" title="Move and resize pieces">
+            <svg class="ic" aria-hidden="true"><use href="#i-layout"></use></svg><span class="tool-label">Layout</span>
+          </button>
+          <button class="tool" data-panel="settings" aria-pressed="false" title="Settings">
+            <svg class="ic" aria-hidden="true"><use href="#i-settings"></use></svg><span class="tool-label">Settings</span>
+          </button>
+          <button id="btn-camera" class="tool" title="Change the camera view" aria-label="Change the camera view">
+            <svg class="ic" aria-hidden="true"><use href="#i-camera"></use></svg>
+          </button>
+          <button id="btn-fullscreen" class="tool" title="Fullscreen" aria-label="Fullscreen">
+            <svg class="ic" aria-hidden="true"><use href="#i-fullscreen"></use></svg>
+          </button>
+        </div>
+
+        <div id="edit-bar" class="edit-bar" hidden>
+          <span id="edit-hint" class="hint"
+            ><strong>Layout</strong>Drag a piece to move it. Drag its handle, pinch or scroll to resize.</span
+          >
+          <div id="edit-piece" class="edit-piece" hidden>
+            <strong id="edit-piece-name"></strong>
+            <label for="edit-size">Size</label>
+            <input type="range" id="edit-size" min="0" max="1" step="0.005" />
+            <label for="edit-height">Height</label>
+            <input type="range" id="edit-height" min="0" max="1" step="0.005" />
+          </div>
+          <button id="btn-pieces" class="tool">
+            <svg class="ic" aria-hidden="true"><use href="#i-pieces"></use></svg><span class="tool-label">Pieces</span>
+          </button>
+          <button id="btn-mirror" class="tool" aria-pressed="false">
+            <svg class="ic" aria-hidden="true"><use href="#i-mirror"></use></svg><span class="tool-label">Left-handed</span>
+          </button>
+          <button id="btn-reset-layout" class="tool">
+            <svg class="ic" aria-hidden="true"><use href="#i-reset"></use></svg><span class="tool-label">Reset</span>
+          </button>
+          <button id="btn-done" class="tool active">
+            <svg class="ic" aria-hidden="true"><use href="#i-check"></use></svg><span class="tool-label">Done</span>
+          </button>
+        </div>
+
+        <div id="camera-bar" class="edit-bar" hidden>
+          <span class="hint"><strong>Camera</strong>Drag to turn around the kit. Pinch or scroll to zoom.</span>
+          <button id="btn-camera-cancel" class="tool">
+            <svg class="ic" aria-hidden="true"><use href="#i-reset"></use></svg><span class="tool-label">Cancel</span>
+          </button>
+          <button id="btn-camera-done" class="tool active">
+            <svg class="ic" aria-hidden="true"><use href="#i-check"></use></svg><span class="tool-label">Save view</span>
+          </button>
+        </div>
+      </header>
+
+      <main id="stage-wrap" class="stage-wrap" aria-label="Drum kit">
+        <div id="stage" class="stage"></div>
+        <div id="paint-bar" class="paint-bar" data-ui hidden>
+          <svg class="ic" aria-hidden="true"><use href="#i-brush"></use></svg>
+          <span>Tap drums and cymbals to paint them</span>
+          <button id="paint-done" class="btn small primary">Done</button>
+        </div>
+        <div id="lesson-hud" class="lesson-hud" data-ui hidden>
+          <div class="hud-main">
+            <div id="hud-title" class="hud-title"></div>
+            <div class="progress"><i id="hud-progress"></i></div>
+          </div>
+          <div id="hud-score" class="hud-score">--<small>ACCURACY</small></div>
+          <button id="hud-stop" class="btn small">Stop</button>
+        </div>
+      </main>
+
+      <aside id="panel" class="panel" hidden>
+        <div class="panel-head">
+          <h2 id="panel-title"></h2>
+          <button id="panel-close" class="icon-btn" aria-label="Close panel">
+            <svg class="ic" aria-hidden="true"><use href="#i-close"></use></svg>
+          </button>
+        </div>
+        <div id="panel-body" class="panel-body"></div>
+      </aside>
+
+      <div id="piece-pop" class="piece-pop" hidden></div>
+
+      <div id="loading" class="loading" hidden>
+        <span id="loading-text" class="loading-text">Tuning the drums</span>
+        <div class="progress"><i id="loading-bar"></i></div>
+      </div>
+
+      <div id="rotate-hint" class="rotate-hint" hidden>
+        <div class="phone" aria-hidden="true"></div>
+        <h2>Turn your phone sideways</h2>
+        <p>The full kit needs a landscape screen. If your screen stays upright, turn the kit instead.</p>
+        <div class="btn-row">
+          <button id="rotate-turn" class="btn primary">Turn the kit</button>
+          <button id="rotate-dismiss" class="btn">Play upright</button>
+        </div>
+      </div>
+
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </div>
+
+    <noscript><p style="padding: 24px">MyDrum needs JavaScript to make sound.</p></noscript>
+    <script type="module" src="js/main.js"></script>
+  </body>
+</html>
